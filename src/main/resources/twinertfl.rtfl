@@ -1,0 +1,156 @@
+//@Name TwineRtfl Functions and Variables
+//@Desc These functions and variables are provided globally for Rtfl scripts used in .rtfm template files.
+//@Version 1.0
+
+//@var The request absolute URI
+def absolute_uri = null
+//@var The request host
+def host = null
+//@var The request path
+def path = null
+//@var The request query string
+def query = null
+//@var The request URI
+def uri = null
+//@var The request method
+def method = null
+//@var The request URL scheme
+def scheme = null
+//@var The IP that requested the page
+def ip = null
+//@var A map containing information about the domain this document is in. It contains the following fields: name, domain, directory, ignore_404, not_found, server_error, index
+def domain = null
+//@var A map containing all request parameters, from the query string or request body
+def params = null
+
+//@desc Returns the directory this document is in
+//@return The directory this document is in
+//@since 1.0
+func get_directory {
+}
+
+//@desc Appends the provided value(s) to the document output, sanitizing all HTML special characters like &lt; and &gt;
+//@param value A value to sanitize and append to the document
+//@param another_value Another value to append to the document (optional, may specify more)
+//@since 1.0
+func append {
+}
+
+//@desc Appends the provided value(s) to the document output without sanitizing them
+//@param value A value to append to the document
+//@param another_value Another value to append to the document (optional, may specify more)
+//@since 1.0
+func append_raw {
+}
+
+//@desc Sets the response status code to the provided int
+//@param code The status code int
+//@since 1.0
+func set_status_code {
+}
+//@desc Returns the response status code
+//@return The response status code
+//@since 1.0
+func get_status_code {
+}
+
+//@desc Sets the response status message to the provided string
+//@param message The status message string
+//@since 1.0
+func set_status_message {
+}
+//@desc Returns the response status message
+//@return The response status message
+//@since 1.0
+func get_status_message {
+}
+
+//@desc Clears all output of this script block
+//@since 1.0
+func clear {
+}
+
+//@desc Puts/sets a response header
+//@param header The header name
+//@param value The value of the header
+//@since 1.0
+func put_header {
+}
+//@desc Returns the value of the specified header, or null if the header is not set
+//@param header The header name
+//@return The value of the header, or null if the header does not exist
+//@since 1.0
+func get_header {
+}
+
+//@desc Puts/sets a session value
+//@param key The session key
+//@param value The session value
+//@since 1.0
+func put_session {
+}
+//@desc Returns a session value
+//@param key The session key
+//@return The value corresponding to the session key, or null of the key does not exist
+//@since 1.0
+func get_session {
+}
+
+//@desc Sends a file as a response
+//@param file The path of the file to send
+//@since 1.0
+func send_file {
+}
+
+//@desc Prepares an SQL query and returns the prepared query
+//@param sql The query SQL (replacing values for parameters with ? to escape them)
+//@param params An array of parameters for this query (optional)
+//@return The prepared query ready to be used
+//@since 1.0
+func query_prepare {
+}
+
+//@desc Creates a database configuration map
+//@param url The JDBC connection URL
+//@param username The connection username
+//@param password The connection password
+//@param max_pool_size The maximum connection pool size
+//@return The configuration map
+//@since 1.0
+func db_config {
+}
+
+//@desc Returns an array of all current database connections in TwineRtfl scripts
+//@return An array of all current database connections in TwineRtfl scripts
+//@since 1.0
+func db_connections {
+}
+
+//@desc Gets the value of a global variable in the global runtime
+//@param name The name of the variable
+//@return The value of the variable
+//@since 1.0
+func get {
+}
+
+//@desc Sets the value of a global variable in the global runtime, or creates one with the provided name and value
+//@param name The name of the variable
+//@param value The value of the variable
+//@since 1.0
+func set {
+}
+
+//@desc Calls a function in the global runtime and returns the result
+//@param The name of the function
+//@param an_arg An argument for the function (optional, can specify zero or more)
+//@return The value returned by the function, or null if none
+//@since 1.0
+func call {
+}
+
+//@desc Sanitizes the provided string for HTML special characters like &lt; and &gt;
+//@param string The string to sanitize
+//@return The sanitized string
+//@since 1.0
+func sanitize {
+}

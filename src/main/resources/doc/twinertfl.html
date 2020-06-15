@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>twinertfl</title>
+        <style>
+            body {
+                background: rgb(20, 20, 20);
+                color: white;
+            }
+            a {
+                color: #0099ff;
+                font-weight: bold;
+            }
+            
+            .func-container {
+                background: rgba(0, 0, 0, 0.3);
+                padding: 10px;
+                margin-bottom: 20px;
+            }
+            
+            .func-name a {
+                display: none;
+                text-decoration: none;
+            }
+            .func-name:hover a {
+                display: inline-block;
+            }
+        </style>
+    </head>
+    <body>
+        <h1 class="header">TwineRtfl Functions and Variables</h1>
+        
+            <p class="version">Version 1.0</p>
+        
+        
+            <i class="desc">These functions and variables are provided globally for Rtfl scripts used in .rtfm template files.</i>
+        
+        <br><br>
+        
+        
+        
+            <div id="vars" class="vars-container">
+                <h2>Global Variables</h2>
+                <div class="vars">
+                    
+                        <div class="var">
+                            <b>absolute_uri</b> - <code>The request absolute URI</code>
+                        </div>
+                    
+                        <div class="var">
+                            <b>host</b> - <code>The request host</code>
+                        </div>
+                    
+                        <div class="var">
+                            <b>path</b> - <code>The request path</code>
+                        </div>
+                    
+                        <div class="var">
+                            <b>query</b> - <code>The request query string</code>
+                        </div>
+                    
+                        <div class="var">
+                            <b>uri</b> - <code>The request URI</code>
+                        </div>
+                    
+                        <div class="var">
+                            <b>method</b> - <code>The request method</code>
+                        </div>
+                    
+                        <div class="var">
+                            <b>scheme</b> - <code>The request URL scheme</code>
+                        </div>
+                    
+                        <div class="var">
+                            <b>ip</b> - <code>The IP that requested the page</code>
+                        </div>
+                    
+                        <div class="var">
+                            <b>domain</b> - <code>A map containing information about the domain this document is in. It contains the following fields: name, domain, directory, ignore_404, not_found, server_error, index</code>
+                        </div>
+                    
+                        <div class="var">
+                            <b>params</b> - <code>A map containing all request parameters, from the query string or request body</code>
+                        </div>
+                    
+                </div>
+            </div>
+        
+        
+            <div id="funcs" class="func-links-container">
+                <h2>Functions</h2>
+                <div class="func-links">
+                    
+                        <a href="#func-get_directory" class="func-link">get_directory</a>
+                        <br>
+                    
+                        <a href="#func-append" class="func-link">append</a>
+                        <br>
+                    
+                        <a href="#func-append_raw" class="func-link">append_raw</a>
+                        <br>
+                    
+                        <a href="#func-set_status_code" class="func-link">set_status_code</a>
+                        <br>
+                    
+                        <a href="#func-get_status_code" class="func-link">get_status_code</a>
+                        <br>
+                    
+                        <a href="#func-set_status_message" class="func-link">set_status_message</a>
+                        <br>
+                    
+                        <a href="#func-get_status_message" class="func-link">get_status_message</a>
+                        <br>
+                    
+                        <a href="#func-clear" class="func-link">clear</a>
+                        <br>
+                    
+                        <a href="#func-put_header" class="func-link">put_header</a>
+                        <br>
+                    
+                        <a href="#func-get_header" class="func-link">get_header</a>
+                        <br>
+                    
+                        <a href="#func-put_session" class="func-link">put_session</a>
+                        <br>
+                    
+                        <a href="#func-get_session" class="func-link">get_session</a>
+                        <br>
+                    
+                        <a href="#func-send_file" class="func-link">send_file</a>
+                        <br>
+                    
+                        <a href="#func-query_prepare" class="func-link">query_prepare</a>
+                        <br>
+                    
+                        <a href="#func-db_config" class="func-link">db_config</a>
+                        <br>
+                    
+                        <a href="#func-db_connections" class="func-link">db_connections</a>
+                        <br>
+                    
+                        <a href="#func-get" class="func-link">get</a>
+                        <br>
+                    
+                        <a href="#func-set" class="func-link">set</a>
+                        <br>
+                    
+                        <a href="#func-call" class="func-link">call</a>
+                        <br>
+                    
+                        <a href="#func-sanitize" class="func-link">sanitize</a>
+                        <br>
+                    
+                </div>
+            </div>
+            <br><hr><br>
+            <div class="funcs-container">
+                
+                    <div class="func-container" id="func-get_directory">
+    <h3 class="func-name">get_directory(
+) <a href="#func-get_directory">&para;</a></h3>
+    <i class="func-desc">Returns the directory this document is in</i>
+    <br><br>
+    
+    
+        <div class="func-return">
+            <b>Returns</b>
+            <code>The directory this document is in</code>
+        </div>
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-append">
+    <h3 class="func-name">append(
+value
+ , 
+
+another_value
+
+
+) <a href="#func-append">&para;</a></h3>
+    <i class="func-desc">Appends the provided value(s) to the document output, sanitizing all HTML special characters like &lt; and &gt;</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>value</span>
+             - 
+            <code>A value to sanitize and append to the document</code>
+        </span>
+        <br>
+    
+        <span class="func-param">
+            <span>another_value</span>
+             - 
+            <code>Another value to append to the document (optional, may specify more)</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-append_raw">
+    <h3 class="func-name">append_raw(
+value
+ , 
+
+another_value
+
+
+) <a href="#func-append_raw">&para;</a></h3>
+    <i class="func-desc">Appends the provided value(s) to the document output without sanitizing them</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>value</span>
+             - 
+            <code>A value to append to the document</code>
+        </span>
+        <br>
+    
+        <span class="func-param">
+            <span>another_value</span>
+             - 
+            <code>Another value to append to the document (optional, may specify more)</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-set_status_code">
+    <h3 class="func-name">set_status_code(
+code
+
+
+) <a href="#func-set_status_code">&para;</a></h3>
+    <i class="func-desc">Sets the response status code to the provided int</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>code</span>
+             - 
+            <code>The status code int</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-get_status_code">
+    <h3 class="func-name">get_status_code(
+) <a href="#func-get_status_code">&para;</a></h3>
+    <i class="func-desc">Returns the response status code</i>
+    <br><br>
+    
+    
+        <div class="func-return">
+            <b>Returns</b>
+            <code>The response status code</code>
+        </div>
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-set_status_message">
+    <h3 class="func-name">set_status_message(
+message
+
+
+) <a href="#func-set_status_message">&para;</a></h3>
+    <i class="func-desc">Sets the response status message to the provided string</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>message</span>
+             - 
+            <code>The status message string</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-get_status_message">
+    <h3 class="func-name">get_status_message(
+) <a href="#func-get_status_message">&para;</a></h3>
+    <i class="func-desc">Returns the response status message</i>
+    <br><br>
+    
+    
+        <div class="func-return">
+            <b>Returns</b>
+            <code>The response status message</code>
+        </div>
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-clear">
+    <h3 class="func-name">clear(
+) <a href="#func-clear">&para;</a></h3>
+    <i class="func-desc">Clears all output of this script block</i>
+    <br><br>
+    
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-put_header">
+    <h3 class="func-name">put_header(
+header
+ , 
+
+value
+
+
+) <a href="#func-put_header">&para;</a></h3>
+    <i class="func-desc">Puts/sets a response header</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>header</span>
+             - 
+            <code>The header name</code>
+        </span>
+        <br>
+    
+        <span class="func-param">
+            <span>value</span>
+             - 
+            <code>The value of the header</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-get_header">
+    <h3 class="func-name">get_header(
+header
+
+
+) <a href="#func-get_header">&para;</a></h3>
+    <i class="func-desc">Returns the value of the specified header, or null if the header is not set</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>header</span>
+             - 
+            <code>The header name</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+        <div class="func-return">
+            <b>Returns</b>
+            <code>The value of the header, or null if the header does not exist</code>
+        </div>
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-put_session">
+    <h3 class="func-name">put_session(
+key
+ , 
+
+value
+
+
+) <a href="#func-put_session">&para;</a></h3>
+    <i class="func-desc">Puts/sets a session value</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>key</span>
+             - 
+            <code>The session key</code>
+        </span>
+        <br>
+    
+        <span class="func-param">
+            <span>value</span>
+             - 
+            <code>The session value</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-get_session">
+    <h3 class="func-name">get_session(
+key
+
+
+) <a href="#func-get_session">&para;</a></h3>
+    <i class="func-desc">Returns a session value</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>key</span>
+             - 
+            <code>The session key</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+        <div class="func-return">
+            <b>Returns</b>
+            <code>The value corresponding to the session key, or null of the key does not exist</code>
+        </div>
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-send_file">
+    <h3 class="func-name">send_file(
+file
+
+
+) <a href="#func-send_file">&para;</a></h3>
+    <i class="func-desc">Sends a file as a response</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>file</span>
+             - 
+            <code>The path of the file to send</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-query_prepare">
+    <h3 class="func-name">query_prepare(
+sql
+ , 
+
+params
+
+
+) <a href="#func-query_prepare">&para;</a></h3>
+    <i class="func-desc">Prepares an SQL query and returns the prepared query</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>sql</span>
+             - 
+            <code>The query SQL (replacing values for parameters with ? to escape them)</code>
+        </span>
+        <br>
+    
+        <span class="func-param">
+            <span>params</span>
+             - 
+            <code>An array of parameters for this query (optional)</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+        <div class="func-return">
+            <b>Returns</b>
+            <code>The prepared query ready to be used</code>
+        </div>
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-db_config">
+    <h3 class="func-name">db_config(
+url
+ , 
+
+username
+ , 
+
+password
+ , 
+
+max_pool_size
+
+
+) <a href="#func-db_config">&para;</a></h3>
+    <i class="func-desc">Creates a database configuration map</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>url</span>
+             - 
+            <code>The JDBC connection URL</code>
+        </span>
+        <br>
+    
+        <span class="func-param">
+            <span>username</span>
+             - 
+            <code>The connection username</code>
+        </span>
+        <br>
+    
+        <span class="func-param">
+            <span>password</span>
+             - 
+            <code>The connection password</code>
+        </span>
+        <br>
+    
+        <span class="func-param">
+            <span>max_pool_size</span>
+             - 
+            <code>The maximum connection pool size</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+        <div class="func-return">
+            <b>Returns</b>
+            <code>The configuration map</code>
+        </div>
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-db_connections">
+    <h3 class="func-name">db_connections(
+) <a href="#func-db_connections">&para;</a></h3>
+    <i class="func-desc">Returns an array of all current database connections in TwineRtfl scripts</i>
+    <br><br>
+    
+    
+        <div class="func-return">
+            <b>Returns</b>
+            <code>An array of all current database connections in TwineRtfl scripts</code>
+        </div>
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-get">
+    <h3 class="func-name">get(
+name
+
+
+) <a href="#func-get">&para;</a></h3>
+    <i class="func-desc">Gets the value of a global variable in the global runtime</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>name</span>
+             - 
+            <code>The name of the variable</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+        <div class="func-return">
+            <b>Returns</b>
+            <code>The value of the variable</code>
+        </div>
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-set">
+    <h3 class="func-name">set(
+name
+ , 
+
+value
+
+
+) <a href="#func-set">&para;</a></h3>
+    <i class="func-desc">Sets the value of a global variable in the global runtime, or creates one with the provided name and value</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>name</span>
+             - 
+            <code>The name of the variable</code>
+        </span>
+        <br>
+    
+        <span class="func-param">
+            <span>value</span>
+             - 
+            <code>The value of the variable</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-call">
+    <h3 class="func-name">call(
+The
+ , 
+
+an_arg
+
+
+) <a href="#func-call">&para;</a></h3>
+    <i class="func-desc">Calls a function in the global runtime and returns the result</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>The</span>
+             - 
+            <code>name of the function</code>
+        </span>
+        <br>
+    
+        <span class="func-param">
+            <span>an_arg</span>
+             - 
+            <code>An argument for the function (optional, can specify zero or more)</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+        <div class="func-return">
+            <b>Returns</b>
+            <code>The value returned by the function, or null if none</code>
+        </div>
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+                    <div class="func-container" id="func-sanitize">
+    <h3 class="func-name">sanitize(
+string
+
+
+) <a href="#func-sanitize">&para;</a></h3>
+    <i class="func-desc">Sanitizes the provided string for HTML special characters like &lt; and &gt;</i>
+    <br><br>
+    
+        <div class="func-params">
+    <b>Parameters</b>
+    <br>
+    
+        <span class="func-param">
+            <span>string</span>
+             - 
+            <code>The string to sanitize</code>
+        </span>
+        <br>
+    
+</div>
+
+    
+    
+        <div class="func-return">
+            <b>Returns</b>
+            <code>The sanitized string</code>
+        </div>
+    
+    
+        <div class="func-since">
+            <b>Since</b>
+            <code>1.0</code>
+        </div>
+    
+</div>
+
+                
+            </div>
+        
+    </body>
+</html>
