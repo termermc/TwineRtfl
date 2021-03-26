@@ -3,12 +3,8 @@ package net.termer.twine.rtfl
 import com.google.common.io.Files
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpMethod
-import io.vertx.core.json.JsonArray
-import io.vertx.kotlin.core.executeBlockingAwait
 import io.vertx.kotlin.core.file.*
 import io.vertx.kotlin.coroutines.await
-import io.vertx.kotlin.ext.sql.queryWithParamsAwait
-import io.vertx.kotlin.ext.web.client.sendAwait
 import io.vertx.pgclient.PgPool
 import io.vertx.sqlclient.templates.SqlTemplate
 import net.termer.rtflc.producers.ProducerException
@@ -25,6 +21,7 @@ import net.termer.twine.rtfl.utils.closeClient
 import net.termer.twine.rtfl.utils.createClient
 import net.termer.twine.rtfl.utils.indexesOf
 import net.termer.twine.rtfl.utils.sanitizeHTML
+import net.termer.twine.utils.RequestUtils
 import net.termer.twine.utils.StringFilter
 import java.io.File
 import java.io.IOException
@@ -169,7 +166,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
         globals["uri"] = RtflType.fromJavaType(req.uri())
         globals["method"] = RtflType.fromJavaType(req.method().toString())
         globals["scheme"] = RtflType.fromJavaType(req.scheme())
-        globals["ip"] = RtflType.fromJavaType(req.connection().remoteAddress().host())
+        globals["ip"] = RtflType.fromJavaType(RequestUtils.resolveIp(req))
         globals["domain"] = MapType(domainMap)
         globals["params"] = MapType(paramsRtfl)
 
@@ -683,7 +680,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                             query = query.substring(0, query.length - 1)
                         }
 
-                        val res = webClient.requestAbs(method, url + query).sendAwait()
+                        val res = webClient.requestAbs(method, url + query).send().await()
 
                         scope.createLocalVar(varName, StringType(res.body().toString(Charset.defaultCharset())))
                     } catch (e: IOException) {
@@ -819,10 +816,10 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 else
                     throw RuntimeException("Must provide string to hash")
             } else if(rtflBlockingPattern.matcher(code).also { matcher = it }.matches()) { // Blocking code block
-                vertx().executeBlockingAwait<Unit> {
+                vertx().executeBlocking<Unit> {
                     runtime.execute(matcher!!.group(1), scope)
                     it.complete()
-                }
+                }.await()
             } else if(rtflInsertRawPattern.matcher(code).also { matcher = it }.matches()) { // Raw insert
                 runtime.execute("append_raw(" + code.substring(1) + ")", scope)
             } else {
