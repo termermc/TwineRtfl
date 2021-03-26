@@ -1,8 +1,7 @@
 package net.termer.twine.rtfl
 
-import io.vertx.ext.sql.SQLClient
 import io.vertx.ext.web.client.WebClient
-import io.vertx.kotlin.coroutines.dispatcher
+import io.vertx.pgclient.PgPool
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import net.termer.rtflc.runtime.RtflRuntime
@@ -15,7 +14,7 @@ import net.termer.twine.modules.TwineModule
 import net.termer.twine.modules.TwineModule.Priority.HIGH
 import net.termer.twine.rtfl.utils.Crypt
 import net.termer.twine.utils.TwineEvent
-import net.termer.twine.utils.Writer
+import net.termer.twine.utils.files.BlockingWriter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -25,13 +24,13 @@ class Module: TwineModule {
     companion object {
         /**
          * Module logger
-         * @since 1.0
+         * @since 1.0.0
          */
         val logger: Logger = LoggerFactory.getLogger(Module::class.java)
 
         /**
          * Global runtime for module
-         * @since 1.0
+         * @since 1.0.0
          */
         val runtime: RtflRuntime = RtflRuntime()
                 .importStandard()
@@ -39,25 +38,25 @@ class Module: TwineModule {
 
         /**
          * WebClient instance for this module
-         * @since 1.0
+         * @since 1.0.0
          */
         val webClient: WebClient = WebClient.create(vertx())
 
         /**
          * Database connections
-         * @since 1.0
+         * @since 2.0.0
          */
-        val dbConnections = HashMap<String, SQLClient>()
+        val dbConnections = HashMap<String, PgPool>()
 
         /**
          * Argon2 utility instance
-         * @since 1.0
+         * @since 1.0.0
          */
         val crypt = Crypt()
     }
 
     override fun name() = "TwineRtfl"
-    override fun twineVersion() = "1.5+"
+    override fun twineVersion() = "2.0+"
     override fun priority() = HIGH
 
     override fun preinitialize() { /* Nothing to do */ }
@@ -68,13 +67,13 @@ class Module: TwineModule {
             dir.mkdirs()
         val startFile = File("rtfl/start.rtfl")
         if (!startFile.exists())
-            Writer.write(startFile.path, "// Script executed when the server is started\n")
+            BlockingWriter.write(startFile.path, "// Script executed when the server is started\n")
         val shutdownFile = File("rtfl/shutdown.rtfl")
         if (!shutdownFile.exists())
-            Writer.write(shutdownFile.path, "// Script executed right before the server is shut down\n")
+            BlockingWriter.write(shutdownFile.path, "// Script executed right before the server is shut down\n")
         val reloadFile = File("rtfl/reload.rtfl")
         if (!reloadFile.exists())
-            Writer.write(reloadFile.path, "// Script executed when server configs are reloaded\n")
+            BlockingWriter.write(reloadFile.path, "// Script executed when server configs are reloaded\n")
 
         // Fire start script
         runtime.executeFile(startFile)
@@ -103,9 +102,9 @@ class Module: TwineModule {
 
         logger.info("Setting up document processor...")
         Documents.registerExtension("rtfm")
-        Documents.processor { ops: DocumentOptions ->
+        Documents.registerProcessor { ops: DocumentOptions ->
             GlobalScope.launch {
-                if (ops.name().endsWith(".rtfm") && Twine.config()["scripting"] as Boolean) {
+                if(ops.name().endsWith(".rtfm")) {
                     ops.route().response().putHeader("Content-Type", "text/html;charset=UTF-8")
                     val content = ops.content()
                     val processor = TemplateProcessor(ops)
@@ -115,22 +114,18 @@ class Module: TwineModule {
                     } catch (e: Exception) {
                         logger.error("Failed to render Rtfl template:")
                         e.printStackTrace()
-                        if (Twine.config()["scriptExceptions"] as Boolean) {
-                            ops.content(
-                                    "<!DOCTYPE html>" +
-                                            "<html>" +
-                                            "<head>" +
-                                            "<title>Error Occurred</title>" +
-                                            "</head>" +
-                                            "<body>" +
-                                            "<h1>Error Occurred</h1>" +
-                                            "<p>Error occurred while rendering template: " + e.javaClass.name + ": " + e.message!!.replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;") + "</p>" +
-                                            "</body>" +
-                                            "</html>"
-                            )
-                        } else {
-                            ops.route().fail(e)
-                        }
+                        ops.content(
+                                "<!DOCTYPE html>" +
+                                        "<html>" +
+                                        "<head>" +
+                                        "<title>Error Occurred</title>" +
+                                        "</head>" +
+                                        "<body>" +
+                                        "<h1>Error Occurred</h1>" +
+                                        "<p>Error occurred while rendering template: " + e.javaClass.name + ": " + e.message!!.replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;") + "</p>" +
+                                        "</body>" +
+                                        "</html>"
+                        )
                     }
                 }
                 ops.next()

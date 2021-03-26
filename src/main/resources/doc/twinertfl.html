@@ -30,7 +30,7 @@
     <body>
         <h1 class="header">TwineRtfl Functions and Variables</h1>
         
-            <p class="version">Version 1.0</p>
+            <p class="version">Version 1.1.0</p>
         
         
             <i class="desc">These functions and variables are provided globally for Rtfl scripts used in .rtfm template files.</i>
@@ -76,7 +76,7 @@
                         </div>
                     
                         <div class="var">
-                            <b>domain</b> - <code>A map containing information about the domain this document is in. It contains the following fields: name, domain, directory, ignore_404, not_found, server_error, index</code>
+                            <b>domain</b> - <code>A map containing information about the domain this document is in. It contains the following fields: name, hostnames, directory, ignore_404, not_found, server_error, index</code>
                         </div>
                     
                         <div class="var">
@@ -601,14 +601,14 @@ params
         <span class="func-param">
             <span>sql</span>
              - 
-            <code>The query SQL (replacing values for parameters with ? to escape them)</code>
+            <code>The query SQL (replacing values for parameters with #{<i>param name</i>} to escape them)</code>
         </span>
         <br>
     
         <span class="func-param">
             <span>params</span>
              - 
-            <code>An array of parameters for this query (optional)</code>
+            <code>A map of parameters for this query (optional)</code>
         </span>
         <br>
     
@@ -624,7 +624,7 @@ params
     
         <div class="func-since">
             <b>Since</b>
-            <code>1.0</code>
+            <code>1.1.0</code>
         </div>
     
 </div>

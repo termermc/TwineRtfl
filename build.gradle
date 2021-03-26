@@ -14,6 +14,9 @@ tasks {
             jvmTarget = '1.8'
         }
     }
+    build {
+        dependsOn('shadowJar')
+    }
 }
 
 dependencies {
@@ -22,14 +25,18 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
     // Depend on Twine
-    compileOnly 'net.termer.twine:twine:1.5b'
+    compileOnly 'net.termer.twine:twine:2.0'
 
-    // Depend on Rtfl
+    // Rtfl
     implementation 'net.termer.rtflc:Rtflc:1.2'
 
-    // Depend on Vert.x Web Client
-    implementation 'io.vertx:vertx-web-client:3.9.1'
+    // Vert.x Web Client
+    implementation 'io.vertx:vertx-web-client:4.0.0'
 
-    // Depend on argon2-jvm
+    // Database dependencies
+    implementation("postgresql:postgresql:9.1-901-1.jdbc4")
+    implementation("io.vertx:vertx-sql-client-templates:4.0.0")
+
+    // Argon2-jvm for password hashing
     implementation 'de.mkammerer:argon2-jvm:2.6'
 }

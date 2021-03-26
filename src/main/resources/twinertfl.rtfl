@@ -1,6 +1,6 @@
 //@Name TwineRtfl Functions and Variables
 //@Desc These functions and variables are provided globally for Rtfl scripts used in .rtfm template files.
-//@Version 1.0
+//@Version 1.1.0
 
 //@var The request absolute URI
 def absolute_uri = null
@@ -18,7 +18,7 @@ def method = null
 def scheme = null
 //@var The IP that requested the page
 def ip = null
-//@var A map containing information about the domain this document is in. It contains the following fields: name, domain, directory, ignore_404, not_found, server_error, index
+//@var A map containing information about the domain this document is in. It contains the following fields: name, hostnames, directory, ignore_404, not_found, server_error, index
 def domain = null
 //@var A map containing all request parameters, from the query string or request body
 def params = null
@@ -103,10 +103,10 @@ func send_file {
 }
 
 //@desc Prepares an SQL query and returns the prepared query
-//@param sql The query SQL (replacing values for parameters with ? to escape them)
-//@param params An array of parameters for this query (optional)
+//@param sql The query SQL (replacing values for parameters with #{<i>param name</i>} to escape them)
+//@param params A map of parameters for this query (optional)
 //@return The prepared query ready to be used
-//@since 1.0
+//@since 1.1.0
 func query_prepare {
 }
 

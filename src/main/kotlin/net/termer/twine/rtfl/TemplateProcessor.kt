@@ -4,11 +4,13 @@ import com.google.common.io.Files
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.http.HttpMethod
 import io.vertx.core.json.JsonArray
-import io.vertx.ext.sql.SQLClient
 import io.vertx.kotlin.core.executeBlockingAwait
 import io.vertx.kotlin.core.file.*
+import io.vertx.kotlin.coroutines.await
 import io.vertx.kotlin.ext.sql.queryWithParamsAwait
 import io.vertx.kotlin.ext.web.client.sendAwait
+import io.vertx.pgclient.PgPool
+import io.vertx.sqlclient.templates.SqlTemplate
 import net.termer.rtflc.producers.ProducerException
 import net.termer.rtflc.runtime.RtflFunction
 import net.termer.rtflc.runtime.RtflRuntime
@@ -33,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
     // Template regex snippets
@@ -90,11 +93,10 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
     private fun currentPath(): String {
         // Find domain
         val host = route.request().host()
-        var dom = Twine.domains().byDomain(if(host.contains(":")) host.split(":").toTypedArray()[0] else host)
-        if (dom == null) dom = Twine.domains().defaultDomain()
+        var dom = Twine.domains().byHostHeaderOrDefault(if(host.contains(":")) host.split(":").toTypedArray()[0] else host)!!
 
         val urlPath = route.request().path()
-        var path = dom!!.directory() + if (urlPath.contains("/")) urlPath.substring(1, Math.max(urlPath.lastIndexOf("/"), 1)) else urlPath.substring(1)
+        var path = dom.root() + if(urlPath.contains("/")) urlPath.substring(1, urlPath.lastIndexOf("/").coerceAtLeast(1)) else urlPath.substring(1)
 
         return File(path).absolutePath+'/'
     }
@@ -141,14 +143,13 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
 
         // Find domain
         val host = req.host()
-        var dom = Twine.domains().byDomain(if (host.contains(":")) host.split(":").toTypedArray()[0] else host)
-        if (dom == null) dom = Twine.domains().defaultDomain()
+        var dom = Twine.domains().byHostHeaderOrDefault(if(host.contains(":")) host.split(":").toTypedArray()[0] else host)!!
 
         // Collect domain data
         val domainMap = HashMap<String, RtflType>()
         domainMap["name"] = RtflType.fromJavaType(dom.name())
-        domainMap["domain"] = RtflType.fromJavaType(dom.domain())
-        domainMap["directory"] = RtflType.fromJavaType(dom.directory())
+        domainMap["hostnames"] = RtflType.fromJavaType(dom.hostnames())
+        domainMap["root"] = RtflType.fromJavaType(dom.root())
         domainMap["ignore_404"] = RtflType.fromJavaType(dom.ignore404())
         domainMap["not_found"] = RtflType.fromJavaType(dom.notFound())
         domainMap["server_error"] = RtflType.fromJavaType(dom.serverError())
@@ -157,7 +158,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
         // Collect params
         val params = req.params()
         val paramsRtfl = HashMap<String, RtflType>()
-        for ((key, value) in params)
+        for((key, value) in params)
             paramsRtfl[key] = StringType(value)
 
         // Expose request data
@@ -166,7 +167,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
         globals["path"] = RtflType.fromJavaType(req.path())
         globals["query"] = RtflType.fromJavaType(req.query())
         globals["uri"] = RtflType.fromJavaType(req.uri())
-        globals["method"] = RtflType.fromJavaType(req.rawMethod())
+        globals["method"] = RtflType.fromJavaType(req.method().toString())
         globals["scheme"] = RtflType.fromJavaType(req.scheme())
         globals["ip"] = RtflType.fromJavaType(req.connection().remoteAddress().host())
         globals["domain"] = MapType(domainMap)
@@ -189,7 +190,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
             val sb = scope.varValue("___content___").value() as StringBuilder
 
             for(arg in args)
-                sb.append(if (arg is NullType) "null" else arg.value().toString())
+                sb.append(if(arg is NullType) "null" else arg.value().toString())
 
             NullType()
         }
@@ -208,7 +209,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
         }
         // Sets the HTTP response status message
         rt.functions()["set_status_message"] = RtflFunction { args, _, _ ->
-            if (args.isNotEmpty() && args[0] is StringType)
+            if(args.isNotEmpty() && args[0] is StringType)
                 res.statusMessage = args[0].value() as String
             else
                 throw RuntimeException("Must provide status message")
@@ -226,7 +227,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
         }
         // Puts an HTTP response header
         rt.functions()["put_header"] = RtflFunction { args, _, _ ->
-            if (args.size > 1 && args[0] is StringType && (args[1] is StringType || args[1] is NullType)) {
+            if(args.size > 1 && args[0] is StringType && (args[1] is StringType || args[1] is NullType)) {
                 val name = args[0].value() as String
                 val value = args[1].value() as String
 
@@ -263,7 +264,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
         }
         // Sends a file as the HTTP response
         rt.functions()["send_file"] = RtflFunction { args, _, _ ->
-            if (args.isNotEmpty() && args[0] is StringType)
+            if(args.isNotEmpty() && args[0] is StringType)
                 res.sendFile(args[0].value() as String)
             else
                 throw RuntimeException("Must provide file path")
@@ -276,7 +277,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 MapType(HashMap<String, RtflType>().apply {
                     this["sql"] = args[0]
 
-                    if(args.size > 1 && args[1] is ArrayType)
+                    if(args.size > 1 && args[1] is MapType)
                         this["params"] = args[1]
                 })
             } else {
@@ -374,7 +375,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
      * @throws RtflRuntime If executing Rtfl code fails
      * @throws ProducerException If any Rtfl code contains a syntax error
      * @throws IOException If any I/O operation fails
-     * @since 1.0
+     * @since 1.0.0
      */
     @Throws(RuntimeException::class, ProducerException::class, IOException::class)
     suspend fun evaluateTemplate(template: String) = evaluateTemplate(template, createDocumentRtflScope(currentPath()), currentPath())
@@ -386,7 +387,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
      * @throws RtflRuntime If executing Rtfl code fails
      * @throws ProducerException If any Rtfl code contains a syntax error
      * @throws IOException If any I/O operation fails
-     * @since 1.0
+     * @since 1.0.0
      */
     @Throws(RuntimeException::class, ProducerException::class, IOException::class)
     suspend fun evaluateTemplate(template: String, scope: Scope) = evaluateTemplate(template, scope, currentPath())
@@ -399,7 +400,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
      * @throws RtflRuntime If executing Rtfl code fails
      * @throws ProducerException If any Rtfl code contains a syntax error
      * @throws IOException If any I/O operation fails
-     * @since 1.0
+     * @since 1.0.0
      */
     @Throws(RuntimeException::class, ProducerException::class, IOException::class)
     suspend fun evaluateTemplate(template: String, scope: Scope, loc: String): String {
@@ -419,7 +420,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
             var iterator = 0
             var closerId = 0
             while (openersLeft > 0) {
-                if (openIndexes.size - iterator + 1 > 0 && iterator + 1 < openIndexes.size && openIndexes[iterator + 1] < closeIndexes[closerId]) {
+                if(openIndexes.size - iterator + 1 > 0 && iterator + 1 < openIndexes.size && openIndexes[iterator + 1] < closeIndexes[closerId]) {
                     closerId++
                     openersLeft++
                 }
@@ -432,7 +433,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
             out.append(content, 0, startIndex)
 
             // Get code block contents
-            val code = content.substring(startIndex + openerStr.length, if (endIndex == 0) content.length else endIndex)
+            val code = content.substring(startIndex + openerStr.length, if(endIndex == 0) content.length else endIndex)
 
             // Check which type of clause it is
             var matcher: Matcher?
@@ -446,7 +447,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 val arrRef = scope.varValue(arrName)
 
                 // Attempt to retrieve variable
-                if (arrRef != null && arrRef is ArrayType) {
+                if(arrRef != null && arrRef is ArrayType) {
                     // Create temporary global for array
                     val tempArrName = StringFilter.generateString(20)
                     runtime.globalVarables()[tempArrName] = arrRef
@@ -459,7 +460,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                     execScope.createLocalVar("___content___", JavaObjectWrapperType(StringBuilder()))
 
                     // Loop through array and evaluate template body
-                    for (i in arr.indices)
+                    for(i in arr.indices)
                         out.append(evaluateTemplate("$openerStr\nlocal i = $i\nlocal $varName = $tempArrName[$i]\n$closerStr$body", execScope))
 
                     // Delete temporary variable
@@ -470,29 +471,29 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
             } else if(rtflIfElsePattern.matcher(code).also { matcher = it }.matches()) { // If else block
                 // Collect data
                 val logic = matcher!!.group(1)
-                val res = runtime.execute("return " + (if (logic.startsWith("!")) "![" else "[") + (if (logic.startsWith("!")) logic.substring(1) else logic) + "]", scope)
+                val res = runtime.execute("return " + (if(logic.startsWith("!")) "![" else "[") + (if(logic.startsWith("!")) logic.substring(1) else logic) + "]", scope)
                 val body = matcher!!.group(2)
                 val elseBody = matcher!!.group(3)
 
                 if(res is BoolType) {
-                    if (res.value() as Boolean)
+                    if(res.value() as Boolean)
                         out.append(evaluateTemplate(body, createDocumentRtflScopeChild(scope, location)))
                     else
                         out.append(evaluateTemplate(elseBody, createDocumentRtflScopeChild(scope, location)))
                 } else {
-                    throw RuntimeException("If statement evaluated a value other than a boolean (" + (if (res is NullType) "null" else res.value().toString()) + ")")
+                    throw RuntimeException("If statement evaluated a value other than a boolean (" + (if(res is NullType) "null" else res.value().toString()) + ")")
                 }
             } else if(rtflIfPattern.matcher(code).also { matcher = it }.matches()) { // If block
                 // Collect data
                 val logic = matcher!!.group(1)
-                val res = runtime.execute("return " + (if (logic.startsWith("!")) "![" else "[") + (if (logic.startsWith("!")) logic.substring(1) else logic) + "]", scope)
+                val res = runtime.execute("return " + (if(logic.startsWith("!")) "![" else "[") + (if(logic.startsWith("!")) logic.substring(1) else logic) + "]", scope)
                 val body = matcher!!.group(2)
 
                 if(res is BoolType) {
-                    if (res.value() as Boolean)
+                    if(res.value() as Boolean)
                         out.append(evaluateTemplate(body, createDocumentRtflScopeChild(scope, location)))
                 } else {
-                    throw RuntimeException("If statement evaluated a value other than a boolean (" + (if (res is NullType) "null" else res.value().toString()) + ")")
+                    throw RuntimeException("If statement evaluated a value other than a boolean (" + (if(res is NullType) "null" else res.value().toString()) + ")")
                 }
             } else if(rtflWhilePattern.matcher(code).also { matcher = it }.matches()) {
                 // Collect data
@@ -500,7 +501,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 val body = matcher!!.group(2)
 
                 while(true) {
-                    val res = runtime.execute("return " + (if (logic.startsWith("!")) "![" else "[") + (if (logic.startsWith("!")) logic.substring(1) else logic) + "]", scope)
+                    val res = runtime.execute("return " + (if(logic.startsWith("!")) "![" else "[") + (if(logic.startsWith("!")) logic.substring(1) else logic) + "]", scope)
 
                     if(res is BoolType) {
                         if(res.value() as Boolean)
@@ -508,7 +509,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                         else
                             break
                     } else {
-                        throw RuntimeException("While statement evaluated a value other than a boolean (" + (if (res is NullType) "null" else res.value().toString()) + ")")
+                        throw RuntimeException("While statement evaluated a value other than a boolean (" + (if(res is NullType) "null" else res.value().toString()) + ")")
                     }
                 }
             } else if(rtflRequirePattern.matcher(code).also { matcher = it }.matches()) { // Require block
@@ -609,7 +610,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 val filename = matcher!!.group(1)
                 val nameValue = runtime.execute("return $filename", scope)
 
-                if (nameValue is StringType) {
+                if(nameValue is StringType) {
                     val path = resolvePath(nameValue.value() as String, location)
 
                     fs.deleteRecursiveAwait(path, true)
@@ -621,7 +622,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 val dirname = matcher!!.group(1)
                 val nameValue = runtime.execute("return $dirname", scope)
 
-                if (nameValue is StringType) {
+                if(nameValue is StringType) {
                     val path = resolvePath(nameValue.value() as String, location)
 
                     fs.mkdirsAwait(path)
@@ -635,7 +636,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 val newName = matcher!!.group(2)
                 val newValue = runtime.execute("return $newName", scope)
 
-                if (nameValue is StringType && newValue is StringType) {
+                if(nameValue is StringType && newValue is StringType) {
                     val path = resolvePath(nameValue.value() as String, location)
                     val newPath = resolvePath(newValue.value() as String, location)
 
@@ -650,7 +651,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 val newName = matcher!!.group(2)
                 val newValue = runtime.execute("return $newName", scope)
 
-                if (nameValue is StringType && newValue is StringType) {
+                if(nameValue is StringType && newValue is StringType) {
                     val path = resolvePath(nameValue.value() as String, location)
                     val newPath = resolvePath(newValue.value() as String, location)
 
@@ -666,18 +667,18 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 val opsVal = runtime.execute("return $opsStr", scope)
                 val varName = matcher!!.group(3)
 
-                if (urlVal is StringType && opsVal is MapType) {
+                if(urlVal is StringType && opsVal is MapType) {
                     val url = urlVal.value() as String
                     val options = RtflType.toJavaType(opsVal) as HashMap<String, Object>
 
                     try {
                         var method = HttpMethod.GET
-                        if (options.containsKey("method"))
+                        if(options.containsKey("method"))
                             method = HttpMethod.valueOf(options["method"].toString())
                         var query = ""
-                        if (options.containsKey("params") && options["params"] is HashMap<*, *>) {
+                        if(options.containsKey("params") && options["params"] is HashMap<*, *>) {
                             query += '?'
-                            for ((key, value) in (options["params"] as HashMap<*, *>).entries)
+                            for((key, value) in (options["params"] as HashMap<*, *>).entries)
                                 query += "${URLEncoder.encode(key as String, "UTF-8")}=${URLEncoder.encode(value.toString(), "UTF-8")}&"
                             query = query.substring(0, query.length - 1)
                         }
@@ -695,10 +696,10 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 val opsVal = runtime.execute("return $opsStr", scope)
                 val varName = matcher!!.group(2)
 
-                if (opsVal is MapType) {
+                if(opsVal is MapType) {
                     val options = RtflType.toJavaType(opsVal) as HashMap<*, *>
 
-                    if (
+                    if(
                             options.containsKey("url") &&
                             options.containsKey("username") &&
                             options.containsKey("password") &&
@@ -709,7 +710,14 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                         val password = options["password"] as String
                         val maxPoolSize = options["max_pool_size"] as Int
 
-                        scope.createLocalVar(varName, JavaObjectWrapperType(createClient(url, username, password, maxPoolSize)))
+                        val urlMatch = Regex("^jdbc:postgresql:\\/\\/(\\w+):([0-9]+)\\/(\\w+)\$").matchEntire(url)
+                                ?: throw RuntimeException("Database connection URL is invalid")
+
+                        val address = urlMatch.groupValues[1]
+                        val port = urlMatch.groupValues[2].toInt()
+                        val dbName = urlMatch.groupValues[3]
+
+                        scope.createLocalVar(varName, JavaObjectWrapperType(createClient(address, port, dbName, username, password, maxPoolSize)))
                     } else {
                         throw RuntimeException("Must provide url, username, password, and max_pool_size")
                     }
@@ -721,15 +729,15 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 val opsStr = matcher!!.group(1)
                 val opsVal = runtime.execute("return $opsStr", scope)
 
-                if (opsVal is MapType) {
+                if(opsVal is MapType) {
                     val options = RtflType.toJavaType(opsVal) as HashMap<String, Object>
 
-                    if (options.containsKey("url")) {
+                    if(options.containsKey("url")) {
                         val url = options["url"] as String
 
                         closeClient(url)
                     } else {
-                        throw RuntimeException("Must provide url, username, password, and max_pool_size")
+                        throw RuntimeException("Must provide map with at least the connection URL in order to close it")
                     }
                 } else {
                     throw RuntimeException("Must provide map with at least the connection URL in order to close it")
@@ -742,26 +750,32 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 val connVal = runtime.execute("return $connStr", scope)
                 val varName = matcher!!.group(3)
 
-                if (opsVal is MapType && connVal is JavaObjectWrapperType && connVal.value() is SQLClient) {
+                if(opsVal is MapType && connVal is JavaObjectWrapperType && connVal.value() is PgPool) {
                     val options = opsVal.value() as ConcurrentHashMap<*, *>
-                    val client = connVal.value() as SQLClient
+                    val client = connVal.value() as PgPool
 
-                    if (options.containsKey("sql")) {
+                    if(options.containsKey("sql")) {
                         val sql = (options["sql"] as RtflType).value() as String
-                        val params = JsonArray()
-                        if (options.containsKey("params"))
-                            for (param in (options["params"] as RtflType).value() as ArrayList<*>)
-                                params.add(RtflType.toJavaType(param as RtflType))
+                        val params = ConcurrentHashMap<String, Any?>().apply {
+                            if(options.containsKey("params") && options["params"] is MapType) {
+                                val map = (options["params"] as MapType).value() as ConcurrentHashMap<String, Any?>
+                                for((key, value) in map.entries)
+                                    this[key] = RtflType.toJavaType(value as RtflType)
+                            }
+                        }
 
-                        val res = client.queryWithParamsAwait(sql, params)
+                        val res = SqlTemplate
+                                .forQuery(client, sql)
+                                .mapTo { it.toJson() }
+                                .execute(params)
+                                .await()
 
                         val rtflRows = ArrayList<RtflType>()
-                        if(res?.rows != null)
-                            for (row in res.rows)
-                                rtflRows.add(MapType(HashMap<String, RtflType>().apply {
-                                    for ((key, value) in row.map.entries)
-                                        this[key] = RtflType.fromJavaType(value)
-                                }))
+                        for(row in res)
+                            rtflRows.add(MapType(HashMap<String, RtflType>().apply {
+                                for((key, value) in row.map.entries)
+                                    this[key] = RtflType.fromJavaType(value)
+                            }))
 
                         scope.createLocalVar(varName, ArrayType(rtflRows))
                     } else {
@@ -788,7 +802,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 val hashVal = runtime.execute("return $hashStr", scope)
                 val varName = matcher!!.group(2)
 
-                if (hashVal is StringType)
+                if(hashVal is StringType)
                     scope.createLocalVar(varName, StringType(Module.crypt.hashPassword(hashVal.value() as String)))
                 else
                     throw RuntimeException("Must provide string to hash")
@@ -800,7 +814,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
                 val hashVal = runtime.execute("return $hashStr", scope)
                 val varName = matcher!!.group(3)
 
-                if (checkVal is StringType && hashVal is StringType)
+                if(checkVal is StringType && hashVal is StringType)
                     scope.createLocalVar(varName, BoolType(Module.crypt.verifyPassword(checkVal.value() as String, hashVal.value() as String)!!))
                 else
                     throw RuntimeException("Must provide string to hash")
