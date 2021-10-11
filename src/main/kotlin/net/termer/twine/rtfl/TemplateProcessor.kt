@@ -254,7 +254,7 @@ class TemplateProcessor(ops: DocumentOptions, opener: String, closer: String) {
         }
         // Returns a session value
         rt.functions()["get_session"] = RtflFunction { args, _, _ ->
-            if(args.isEmpty() && args[0] is StringType)
+            if(args.isNotEmpty() && args[0] is StringType)
                 RtflType.fromJavaType(ops.route().session().get(args[0].value() as String))
             else
                 throw RuntimeException("Must provide key name")
