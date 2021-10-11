@@ -104,7 +104,7 @@ class Module: TwineModule {
         Documents.registerExtension("rtfm")
         Documents.registerProcessor { ops: DocumentOptions ->
             GlobalScope.launch {
-                if(ops.name().endsWith(".rtfm")) {
+                if(ops.extension() == "rtfm") {
                     ops.route().response().putHeader("Content-Type", "text/html;charset=UTF-8")
                     val content = ops.content()
                     val processor = TemplateProcessor(ops)
